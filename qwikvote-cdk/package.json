@@ -1,0 +1,30 @@
+{
+    "name": "quikvote-cdk",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "pnpm exec tsc",
+        "dev": "pnpm exec cdk watch",
+        "lint": "pnpm exec eslint --fix --cache --cache-location .cache/eslint .",
+        "format": "pnpm exec prettier --write --cache --cache-location .cache/prettier --ignore-path ../../.prettierignore .",
+        "clean": "rm -rf dist .turbo .cache cdk.out",
+        "fullclean": "pnpm run clean && rm -rf node_modules",
+        "synth": "dotenv -e .env.local -- pnpm exec cdk synth",
+        "deploy": "dotenv -e .env.local -- pnpm exec cdk deploy",
+        "diff": "dotenv -e .env.local -- pnpm exec cdk diff",
+        "bootstrap": "dotenv -e .env.local -- pnpm exec cdk bootstrap"
+    },
+    "dependencies": {
+        "@aws-cdk/aws-lambda-python-alpha": "^2.200.0-alpha.0",
+        "aws-cdk-lib": "^2.243.0",
+        "constructs": "^10.5.1",
+        "zod": "^4.3.6"
+    },
+    "devDependencies": {
+        "@types/node": "^25.5.0",
+        "aws-cdk": "^2.1112.0",
+        "dotenv-cli": "^11.0.0",
+        "tsx": "^4.19.3",
+        "typescript": "^5.9.3"
+    }
+}
