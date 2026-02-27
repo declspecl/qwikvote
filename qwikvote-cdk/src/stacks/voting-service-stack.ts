@@ -30,8 +30,8 @@ export class VotingServiceStack extends cdk.Stack {
                 type: dynamodb.AttributeType.STRING
             },
             billing: dynamodb.Billing.provisioned({
-                readCapacity: dynamodb.Capacity.fixed(5),
-                writeCapacity: dynamodb.Capacity.fixed(5),
+                readCapacity: dynamodb.Capacity.autoscaled({ maxCapacity: 10 }),
+                writeCapacity: dynamodb.Capacity.autoscaled({ maxCapacity: 10 }),
             }),
             removalPolicy: cdk.RemovalPolicy.RETAIN,
         });
