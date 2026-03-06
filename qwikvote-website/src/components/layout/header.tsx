@@ -10,8 +10,8 @@ export function Header() {
           <Vote className="h-5 w-5" />
           QwikVote
         </Link>
-        <Button asChild size="sm">
-          <Link to="/create">Create Poll</Link>
+        <Button size="sm" render={<Link to="/create" />}>
+          Create Poll
         </Button>
       </div>
     </header>

@@ -20,16 +20,14 @@ interface VetoButtonProps {
 export function VetoButton({ onVeto, disabled }: VetoButtonProps) {
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          variant="destructive"
-          size="sm"
-          disabled={disabled}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <ShieldBan className="h-4 w-4 mr-1" />
-          Veto
-        </Button>
+      <AlertDialogTrigger
+        render={
+          <Button variant="destructive" size="sm" disabled={disabled} />
+        }
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
+        <ShieldBan className="h-4 w-4 mr-1" />
+        Veto
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

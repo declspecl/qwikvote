@@ -32,8 +32,8 @@ function LandingPage() {
           Create polls with weighted voting, veto power, and AI-assisted options.
           No account required.
         </p>
-        <Button asChild size="lg">
-          <Link to="/create">Create a Poll</Link>
+        <Button size="lg" render={<Link to="/create" />}>
+          Create a Poll
         </Button>
       </section>
 
