@@ -22,7 +22,12 @@ export function VetoButton({ onVeto, disabled }: VetoButtonProps) {
     <AlertDialog>
       <AlertDialogTrigger
         render={
-          <Button variant="destructive" size="sm" disabled={disabled} />
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={disabled}
+            className="transition-all duration-200 hover:shadow-[0_0_15px_oklch(0.577_0.245_27.325_/_0.4)]"
+          />
         }
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { useQueryState, parseAsInteger } from "nuqs";
 import { useState } from "react";
-import { GripVertical, Plus, X, Sparkles } from "lucide-react";
+import { GripVertical, Plus, X, Sparkles, Scale, ShieldBan, Lock } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -26,11 +26,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { StepIndicator } from "@/components/shared/step-indicator";
 import { useCreatePoll } from "@/features/poll/queries";
@@ -69,21 +64,69 @@ function SortableOption({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
-      <button type="button" {...attributes} {...listeners} className="cursor-grab touch-none text-muted-foreground hover:text-foreground">
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 group">
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="cursor-grab touch-none text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-accent/50"
+      >
         <GripVertical className="h-5 w-5" />
       </button>
       <Input
         placeholder={`Option ${index + 1}`}
         value={item.text}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1"
+        className="flex-1 bg-background/50"
       />
       {canRemove && (
-        <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onRemove}
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+        >
           <X className="h-4 w-4" />
         </Button>
       )}
+    </div>
+  );
+}
+
+function SettingCard({
+  icon: Icon,
+  title,
+  description,
+  checked,
+  onCheckedChange,
+  id,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  id: string;
+}) {
+  return (
+    <div
+      className={`glass rounded-xl p-4 transition-all duration-200 ${checked ? "ring-1 ring-primary/30" : ""}`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${checked ? "gradient-bg" : "bg-muted"}`}>
+            <Icon className={`h-4 w-4 ${checked ? "text-white" : "text-muted-foreground"}`} />
+          </div>
+          <div>
+            <Label htmlFor={id} className="cursor-pointer font-medium">
+              {title}
+            </Label>
+            <p className="text-xs text-muted-foreground">{description}</p>
+          </div>
+        </div>
+        <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+      </div>
     </div>
   );
 }
@@ -171,14 +214,17 @@ function CreatePollPage() {
   const back = () => setStep(Math.max(step - 1, 1));
 
   return (
-    <main className="container mx-auto max-w-xl px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6 text-center">Create a Poll</h1>
+    <main className="container mx-auto max-w-xl px-4 py-8 animate-fade-in-up">
+      <h1 className="text-2xl font-bold mb-2 text-center">Create a Poll</h1>
+      <p className="text-sm text-muted-foreground text-center mb-6">
+        Step {step} of 4 — {STEP_LABELS[step - 1]}
+      </p>
       <StepIndicator currentStep={step} totalSteps={4} labels={STEP_LABELS} />
 
-      <Card>
-        <CardContent className="p-6">
+      <Card className="glass">
+        <CardContent className="p-8">
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <form.Field name="title">
                 {(field) => (
                   <div className="space-y-2">
@@ -188,6 +234,7 @@ function CreatePollPage() {
                       placeholder="What should we decide?"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
+                      className="bg-background/50"
                     />
                   </div>
                 )}
@@ -202,6 +249,7 @@ function CreatePollPage() {
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       rows={3}
+                      className="bg-background/50"
                     />
                   </div>
                 )}
@@ -228,12 +276,12 @@ function CreatePollPage() {
                   </div>
                 </SortableContext>
               </DndContext>
-              <Button type="button" variant="outline" size="sm" onClick={addOption}>
+              <Button type="button" variant="outline" size="sm" onClick={addOption} className="hover:bg-primary/10 transition-colors">
                 <Plus className="h-4 w-4 mr-1" />
                 Add Option
               </Button>
 
-              <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex items-center justify-between pt-4 border-t border-border/50">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-muted-foreground" />
                   <Label htmlFor="llm-toggle">Use AI to suggest options</Label>
@@ -255,83 +303,79 @@ function CreatePollPage() {
           )}
 
           {step === 3 && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <Tooltip>
-                  <TooltipTrigger render={<Label htmlFor="weighted" className="cursor-help" />}>
-                    Enable Weighted Voting
-                  </TooltipTrigger>
-                  <TooltipContent>Voters can express conviction from 1-5</TooltipContent>
-                </Tooltip>
-                <Switch
-                  id="weighted"
-                  checked={config.weighted_voting}
-                  onCheckedChange={(checked) =>
-                    setConfig((c) => ({ ...c, weighted_voting: checked }))
-                  }
-                />
-              </div>
+            <div className="space-y-4">
+              <SettingCard
+                icon={Scale}
+                title="Weighted Voting"
+                description="Voters can express conviction from 1-5"
+                id="weighted"
+                checked={config.weighted_voting}
+                onCheckedChange={(checked) =>
+                  setConfig((c) => ({ ...c, weighted_voting: checked }))
+                }
+              />
 
-              <div className="flex items-center justify-between">
-                <Tooltip>
-                  <TooltipTrigger render={<Label htmlFor="veto" className="cursor-help" />}>
-                    Enable Veto Power
-                  </TooltipTrigger>
-                  <TooltipContent>Voters can veto options they find unacceptable</TooltipContent>
-                </Tooltip>
-                <Switch
-                  id="veto"
-                  checked={config.veto_enabled}
-                  onCheckedChange={(checked) =>
-                    setConfig((c) => ({ ...c, veto_enabled: checked }))
-                  }
-                />
-              </div>
+              <SettingCard
+                icon={ShieldBan}
+                title="Veto Power"
+                description="Voters can veto options they find unacceptable"
+                id="veto"
+                checked={config.veto_enabled}
+                onCheckedChange={(checked) =>
+                  setConfig((c) => ({ ...c, veto_enabled: checked }))
+                }
+              />
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password-toggle">Password Protect</Label>
-                  <Switch
-                    id="password-toggle"
-                    checked={passwordEnabled}
-                    onCheckedChange={setPasswordEnabled}
-                  />
-                </div>
-                {passwordEnabled && (
+              <SettingCard
+                icon={Lock}
+                title="Password Protect"
+                description="Require a password to vote"
+                id="password-toggle"
+                checked={passwordEnabled}
+                onCheckedChange={setPasswordEnabled}
+              />
+              {passwordEnabled && (
+                <div className="pl-12">
                   <Input
                     type="password"
                     placeholder="Enter a password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="bg-background/50"
                   />
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
           {step === 4 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <CardHeader className="p-0">
                 <CardTitle className="text-lg">Review Your Poll</CardTitle>
               </CardHeader>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-muted-foreground">Title</p>
+              <div className="space-y-4">
+                <div className="glass rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Title</p>
                   <p className="font-medium">{form.getFieldValue("title")}</p>
                 </div>
                 {form.getFieldValue("description") && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Description</p>
+                  <div className="glass rounded-lg p-4">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Description</p>
                     <p>{form.getFieldValue("description")}</p>
                   </div>
                 )}
-                <div>
-                  <p className="text-sm text-muted-foreground">Options</p>
-                  <ul className="list-disc list-inside">
+                <div className="glass rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Options</p>
+                  <ul className="space-y-1">
                     {options
                       .filter((o) => o.text.trim())
-                      .map((o) => (
-                        <li key={o.id}>{o.text}</li>
+                      .map((o, i) => (
+                        <li key={o.id} className="flex items-center gap-2 text-sm">
+                          <span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">
+                            {i + 1}
+                          </span>
+                          {o.text}
+                        </li>
                       ))}
                   </ul>
                 </div>
@@ -346,17 +390,22 @@ function CreatePollPage() {
           )}
 
           {/* Navigation */}
-          <div className="flex justify-between mt-6 pt-4 border-t">
+          <div className="flex justify-between mt-8 pt-4 border-t border-border/50">
             <Button
               type="button"
               variant="outline"
               onClick={back}
               disabled={step === 1}
+              className="hover:bg-accent/50 transition-colors"
             >
               Back
             </Button>
             {step < 4 ? (
-              <Button type="button" onClick={next}>
+              <Button
+                type="button"
+                onClick={next}
+                className="gradient-bg text-white hover:shadow-md transition-all duration-200"
+              >
                 Next
               </Button>
             ) : (
@@ -364,6 +413,7 @@ function CreatePollPage() {
                 type="button"
                 onClick={() => form.handleSubmit()}
                 disabled={createPoll.isPending}
+                className="gradient-bg text-white hover:shadow-md transition-all duration-200"
               >
                 {createPoll.isPending ? "Creating..." : "Create Poll"}
               </Button>

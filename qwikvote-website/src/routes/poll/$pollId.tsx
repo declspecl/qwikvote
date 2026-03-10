@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Trophy, Dice6 } from "lucide-react";
+import { Trophy, Dice6, Medal } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,12 +32,12 @@ export const Route = createFileRoute("/poll/$pollId")({
 function PollError({ error }: { error: Error }) {
   if (error instanceof ApiError && error.status === 404) {
     return (
-      <div className="container mx-auto max-w-2xl px-4 py-16 text-center space-y-4">
+      <div className="container mx-auto max-w-2xl px-4 py-16 text-center space-y-4 animate-fade-in-up">
         <h1 className="text-2xl font-bold">Poll Not Found</h1>
         <p className="text-muted-foreground">
           This poll doesn't exist or may have been removed.
         </p>
-        <Button render={<Link to="/create" />}>
+        <Button className="gradient-bg text-white" render={<Link to="/create" />}>
           Create a Poll
         </Button>
       </div>
@@ -45,7 +45,7 @@ function PollError({ error }: { error: Error }) {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-16 text-center space-y-4">
+    <div className="container mx-auto max-w-2xl px-4 py-16 text-center space-y-4 animate-fade-in-up">
       <h1 className="text-2xl font-bold">Something went wrong</h1>
       <p className="text-muted-foreground">{error.message}</p>
       <Button variant="outline" render={<Link to="/" />}>
@@ -138,8 +138,9 @@ function PollVotingView({ poll, pollId }: { poll: PollResponse; pollId: string }
   }
 
   return (
-    <main className="container mx-auto max-w-2xl px-4 py-8">
+    <main className="container mx-auto max-w-2xl px-4 py-8 animate-fade-in-up">
       <div className="space-y-2 mb-6">
+        <div className="h-1 w-16 gradient-bg rounded-full mb-4" />
         <h1 className="text-2xl font-bold">{poll.title}</h1>
         {poll.description && (
           <p className="text-muted-foreground">{poll.description}</p>
@@ -176,7 +177,7 @@ function PollVotingView({ poll, pollId }: { poll: PollResponse; pollId: string }
       )}
 
       <Button
-        className="w-full mt-6"
+        className="w-full mt-6 gradient-bg text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01]"
         size="lg"
         onClick={handleSubmit}
         disabled={!selectedOptionId || submitVote.isPending}
@@ -209,18 +210,18 @@ function PollLiveResults({
   };
 
   return (
-    <main className="container mx-auto max-w-2xl px-4 py-8">
-      <Badge className="mb-4">Your vote is in!</Badge>
+    <main className="container mx-auto max-w-2xl px-4 py-8 animate-fade-in-up">
+      <Badge className="mb-4 gradient-bg text-white border-0">Your vote is in!</Badge>
       <h1 className="text-2xl font-bold mb-6">{poll.title}</h1>
 
       <div className="space-y-3">
-        {poll.options.map((opt) => {
+        {poll.options.map((opt, i) => {
           const score = scores[opt.option_id] ?? 0;
           return (
             <div key={opt.option_id} className="flex items-center gap-3">
               <span className="w-32 truncate text-sm font-medium">{opt.text}</span>
-              <ScoreBar score={score} max={maxScore} />
-              <span className="w-10 text-right text-sm text-muted-foreground">
+              <ScoreBar score={score} max={maxScore} delay={i} />
+              <span className="w-10 text-right text-sm font-medium text-muted-foreground">
                 {score}
               </span>
             </div>
@@ -230,7 +231,7 @@ function PollLiveResults({
 
       <Button
         variant="destructive"
-        className="mt-8"
+        className="mt-8 transition-all duration-200 hover:shadow-[0_0_15px_oklch(0.577_0.245_27.325_/_0.3)]"
         onClick={handleClose}
         disabled={closePoll.isPending}
       >
@@ -241,6 +242,8 @@ function PollLiveResults({
     </main>
   );
 }
+
+const MEDAL_COLORS = ["text-yellow-500", "text-gray-400", "text-amber-600"];
 
 function PollFinalResults({ poll }: { poll: PollResponse }) {
   const results = poll.results;
@@ -258,20 +261,25 @@ function PollFinalResults({ poll }: { poll: PollResponse }) {
     .includes("random");
 
   return (
-    <main className="container mx-auto max-w-2xl px-4 py-8">
+    <main className="container mx-auto max-w-2xl px-4 py-8 animate-fade-in-up">
       <ConfettiOverlay />
-      <Badge className="mb-4">Poll Closed</Badge>
+      <Badge className="mb-4 gradient-bg text-white border-0">Poll Closed</Badge>
       <h1 className="text-2xl font-bold mb-6">{poll.title}</h1>
 
       {results.winner_text && (
-        <Card className="mb-6 border-primary">
-          <CardHeader className="pb-2">
+        <Card className="mb-6 overflow-hidden relative">
+          <div className="absolute inset-0 rounded-xl" style={{
+            background: "linear-gradient(135deg, oklch(0.85 0.15 85), oklch(0.80 0.12 60), oklch(0.75 0.10 45))",
+            opacity: 0.1,
+          }} />
+          <div className="absolute inset-0 rounded-xl ring-2 ring-yellow-500/30" />
+          <CardHeader className="pb-2 relative">
             <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
+              <Trophy className="h-6 w-6 text-yellow-500" style={{ animation: "float 3s ease-in-out infinite" }} />
               Winner
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative">
             <p className="text-lg font-semibold">{results.winner_text}</p>
             {results.result_justification && (
               <p className="text-sm text-muted-foreground mt-1">
@@ -292,17 +300,25 @@ function PollFinalResults({ poll }: { poll: PollResponse }) {
         {sortedOptions.map((opt, rank) => {
           const score = scores[opt.option_id] ?? 0;
           const isVetoed = results.veto_disqualified.includes(opt.option_id);
+          const isTopThree = rank < 3 && !isVetoed;
           return (
             <div
               key={opt.option_id}
-              className={`flex items-center gap-3 ${isVetoed ? "opacity-50" : ""}`}
+              className={`flex items-center gap-3 transition-opacity ${isVetoed ? "opacity-40" : ""}`}
+              style={{ animation: `fade-in-up 0.4s ease-out ${rank * 0.08}s both` }}
             >
-              <span className="w-6 text-sm text-muted-foreground">#{rank + 1}</span>
-              <span className={`w-32 truncate text-sm font-medium ${isVetoed ? "line-through" : ""}`}>
+              <span className="w-6 flex items-center justify-center">
+                {isTopThree ? (
+                  <Medal className={`h-4 w-4 ${MEDAL_COLORS[rank]}`} />
+                ) : (
+                  <span className="text-sm text-muted-foreground">#{rank + 1}</span>
+                )}
+              </span>
+              <span className={`w-32 truncate text-sm font-medium ${isVetoed ? "line-through text-destructive/70" : ""}`}>
                 {opt.text}
               </span>
-              <ScoreBar score={score} max={maxScore} />
-              <span className="w-10 text-right text-sm text-muted-foreground">
+              <ScoreBar score={score} max={maxScore} delay={rank} />
+              <span className="w-10 text-right text-sm font-medium text-muted-foreground">
                 {score}
               </span>
               {isVetoed && (
