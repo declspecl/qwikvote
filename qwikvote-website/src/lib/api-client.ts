@@ -10,7 +10,7 @@ import {
   type CloseRequest,
 } from "./schemas";
 
-const API_BASE_URL = "https://9zx14x4ipk.execute-api.us-east-1.amazonaws.com/v1/";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 export class ApiError extends Error {
   status: number;

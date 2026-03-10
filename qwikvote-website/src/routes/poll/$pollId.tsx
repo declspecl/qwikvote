@@ -33,11 +33,11 @@ function PollError({ error }: { error: Error }) {
   if (error instanceof ApiError && error.status === 404) {
     return (
       <div className="container mx-auto max-w-2xl px-4 py-16 text-center space-y-4 animate-fade-in-up">
-        <h1 className="text-2xl font-bold">Poll Not Found</h1>
+        <h1 className="font-display text-2xl font-bold">Poll Not Found</h1>
         <p className="text-muted-foreground">
           This poll doesn't exist or may have been removed.
         </p>
-        <Button className="gradient-bg text-white" render={<Link to="/create" />}>
+        <Button className="bg-primary text-primary-foreground btn-lift" render={<Link to="/create" />}>
           Create a Poll
         </Button>
       </div>
@@ -46,7 +46,7 @@ function PollError({ error }: { error: Error }) {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-16 text-center space-y-4 animate-fade-in-up">
-      <h1 className="text-2xl font-bold">Something went wrong</h1>
+      <h1 className="font-display text-2xl font-bold">Something went wrong</h1>
       <p className="text-muted-foreground">{error.message}</p>
       <Button variant="outline" render={<Link to="/" />}>
         Go Home
@@ -132,7 +132,6 @@ function PollVotingView({ poll, pollId }: { poll: PollResponse; pollId: string }
     );
   };
 
-  // If we just voted and have scores, show live results inline
   if (scores) {
     return <PollLiveResults poll={poll} pollId={pollId} initialScores={scores} />;
   }
@@ -140,8 +139,7 @@ function PollVotingView({ poll, pollId }: { poll: PollResponse; pollId: string }
   return (
     <main className="container mx-auto max-w-2xl px-4 py-8 animate-fade-in-up">
       <div className="space-y-2 mb-6">
-        <div className="h-1 w-16 gradient-bg rounded-full mb-4" />
-        <h1 className="text-2xl font-bold">{poll.title}</h1>
+        <h1 className="font-display text-3xl font-bold">{poll.title}</h1>
         {poll.description && (
           <p className="text-muted-foreground">{poll.description}</p>
         )}
@@ -177,7 +175,7 @@ function PollVotingView({ poll, pollId }: { poll: PollResponse; pollId: string }
       )}
 
       <Button
-        className="w-full mt-6 gradient-bg text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.01]"
+        className="w-full mt-6 bg-primary text-primary-foreground btn-lift btn-glow"
         size="lg"
         onClick={handleSubmit}
         disabled={!selectedOptionId || submitVote.isPending}
@@ -211,8 +209,8 @@ function PollLiveResults({
 
   return (
     <main className="container mx-auto max-w-2xl px-4 py-8 animate-fade-in-up">
-      <Badge className="mb-4 gradient-bg text-white border-0">Your vote is in!</Badge>
-      <h1 className="text-2xl font-bold mb-6">{poll.title}</h1>
+      <Badge className="mb-4 bg-primary text-primary-foreground border-0">Your vote is in!</Badge>
+      <h1 className="font-display text-2xl font-bold mb-6">{poll.title}</h1>
 
       <div className="space-y-3">
         {poll.options.map((opt, i) => {
@@ -231,7 +229,7 @@ function PollLiveResults({
 
       <Button
         variant="destructive"
-        className="mt-8 transition-all duration-200 hover:shadow-[0_0_15px_oklch(0.577_0.245_27.325_/_0.3)]"
+        className="mt-8 btn-lift"
         onClick={handleClose}
         disabled={closePoll.isPending}
       >
@@ -263,23 +261,18 @@ function PollFinalResults({ poll }: { poll: PollResponse }) {
   return (
     <main className="container mx-auto max-w-2xl px-4 py-8 animate-fade-in-up">
       <ConfettiOverlay />
-      <Badge className="mb-4 gradient-bg text-white border-0">Poll Closed</Badge>
-      <h1 className="text-2xl font-bold mb-6">{poll.title}</h1>
+      <Badge className="mb-4 bg-primary text-primary-foreground border-0">Poll Closed</Badge>
+      <h1 className="font-display text-2xl font-bold mb-6">{poll.title}</h1>
 
       {results.winner_text && (
-        <Card className="mb-6 overflow-hidden relative">
-          <div className="absolute inset-0 rounded-xl" style={{
-            background: "linear-gradient(135deg, oklch(0.85 0.15 85), oklch(0.80 0.12 60), oklch(0.75 0.10 45))",
-            opacity: 0.1,
-          }} />
-          <div className="absolute inset-0 rounded-xl ring-2 ring-yellow-500/30" />
-          <CardHeader className="pb-2 relative">
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-yellow-500" style={{ animation: "float 3s ease-in-out infinite" }} />
+        <Card className="mb-6 overflow-hidden border-primary/30 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 font-display">
+              <Trophy className="h-6 w-6 text-primary" />
               Winner
             </CardTitle>
           </CardHeader>
-          <CardContent className="relative">
+          <CardContent>
             <p className="text-lg font-semibold">{results.winner_text}</p>
             {results.result_justification && (
               <p className="text-sm text-muted-foreground mt-1">
@@ -304,8 +297,11 @@ function PollFinalResults({ poll }: { poll: PollResponse }) {
           return (
             <div
               key={opt.option_id}
-              className={`flex items-center gap-3 transition-opacity ${isVetoed ? "opacity-40" : ""}`}
-              style={{ animation: `fade-in-up 0.4s ease-out ${rank * 0.08}s both` }}
+              className={`flex items-center gap-3 transition-opacity reveal`}
+              style={{
+                animationDelay: `${rank * 80}ms`,
+                opacity: isVetoed ? 0.4 : undefined,
+              }}
             >
               <span className="w-6 flex items-center justify-center">
                 {isTopThree ? (

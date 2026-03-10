@@ -111,12 +111,12 @@ function SettingCard({
 }) {
   return (
     <div
-      className={`glass rounded-xl p-4 transition-all duration-200 ${checked ? "ring-1 ring-primary/30" : ""}`}
+      className={`surface p-4 transition-all duration-200 ${checked ? "ring-1 ring-primary/30" : ""}`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${checked ? "gradient-bg" : "bg-muted"}`}>
-            <Icon className={`h-4 w-4 ${checked ? "text-white" : "text-muted-foreground"}`} />
+          <div className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${checked ? "bg-primary/10" : "bg-muted"}`}>
+            <Icon className={`h-4 w-4 ${checked ? "text-primary" : "text-muted-foreground"}`} />
           </div>
           <div>
             <Label htmlFor={id} className="cursor-pointer font-medium">
@@ -215,13 +215,13 @@ function CreatePollPage() {
 
   return (
     <main className="container mx-auto max-w-xl px-4 py-8 animate-fade-in-up">
-      <h1 className="text-2xl font-bold mb-2 text-center">Create a Poll</h1>
+      <h1 className="font-display text-2xl font-bold mb-2 text-center">Create a Poll</h1>
       <p className="text-sm text-muted-foreground text-center mb-6">
         Step {step} of 4 — {STEP_LABELS[step - 1]}
       </p>
       <StepIndicator currentStep={step} totalSteps={4} labels={STEP_LABELS} />
 
-      <Card className="glass">
+      <Card className="surface">
         <CardContent className="p-8">
           {step === 1 && (
             <div className="space-y-5">
@@ -351,20 +351,20 @@ function CreatePollPage() {
           {step === 4 && (
             <div className="space-y-5">
               <CardHeader className="p-0">
-                <CardTitle className="text-lg">Review Your Poll</CardTitle>
+                <CardTitle className="text-lg font-display">Review Your Poll</CardTitle>
               </CardHeader>
               <div className="space-y-4">
-                <div className="glass rounded-lg p-4">
+                <div className="surface p-4">
                   <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Title</p>
                   <p className="font-medium">{form.getFieldValue("title")}</p>
                 </div>
                 {form.getFieldValue("description") && (
-                  <div className="glass rounded-lg p-4">
+                  <div className="surface p-4">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Description</p>
                     <p>{form.getFieldValue("description")}</p>
                   </div>
                 )}
-                <div className="glass rounded-lg p-4">
+                <div className="surface p-4">
                   <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Options</p>
                   <ul className="space-y-1">
                     {options
@@ -404,7 +404,7 @@ function CreatePollPage() {
               <Button
                 type="button"
                 onClick={next}
-                className="gradient-bg text-white hover:shadow-md transition-all duration-200"
+                className="bg-primary text-primary-foreground btn-lift"
               >
                 Next
               </Button>
@@ -413,7 +413,7 @@ function CreatePollPage() {
                 type="button"
                 onClick={() => form.handleSubmit()}
                 disabled={createPoll.isPending}
-                className="gradient-bg text-white hover:shadow-md transition-all duration-200"
+                className="bg-primary text-primary-foreground btn-lift"
               >
                 {createPoll.isPending ? "Creating..." : "Create Poll"}
               </Button>

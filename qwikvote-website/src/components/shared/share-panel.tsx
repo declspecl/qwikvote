@@ -16,7 +16,7 @@ export function SharePanel() {
   };
 
   return (
-    <div className="glass rounded-xl p-4 mt-6">
+    <div className="surface p-4 mt-6">
       <p className="text-sm font-medium mb-2">Share this poll</p>
       <div className="flex gap-2">
         <Input readOnly value={url} className="font-mono text-sm bg-background/50" />

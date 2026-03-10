@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Scale, ShieldBan, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FeatureCard } from "@/components/shared/feature-card";
@@ -9,54 +8,73 @@ export const Route = createFileRoute("/")({
   component: LandingPage,
 });
 
+/* Custom inline SVG graphics for each feature */
+const WeightedVotingGraphic = (
+  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="6" y="30" width="8" height="12" rx="2" className="fill-primary/30" />
+    <rect x="16" y="22" width="8" height="20" rx="2" className="fill-primary/50" />
+    <rect x="26" y="14" width="8" height="28" rx="2" className="fill-primary/70" />
+    <rect x="36" y="6" width="8" height="36" rx="2" className="fill-primary" />
+  </svg>
+);
+
+const VetoPowerGraphic = (
+  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="8" width="28" height="32" rx="4" className="stroke-primary/50" strokeWidth="2" fill="none" />
+    <line x1="16" y1="18" x2="32" y2="18" className="stroke-primary/30" strokeWidth="2" strokeLinecap="round" />
+    <line x1="16" y1="24" x2="28" y2="24" className="stroke-primary/30" strokeWidth="2" strokeLinecap="round" />
+    <line x1="16" y1="30" x2="30" y2="30" className="stroke-primary/30" strokeWidth="2" strokeLinecap="round" />
+    <line x1="12" y1="40" x2="38" y2="8" className="stroke-destructive" strokeWidth="2.5" strokeLinecap="round" />
+  </svg>
+);
+
+const AISuggestionsGraphic = (
+  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="6" y="10" width="28" height="22" rx="6" className="stroke-primary/50" strokeWidth="2" fill="none" />
+    <path d="M14 32 L10 38 L18 32" className="stroke-primary/50" strokeWidth="2" strokeLinejoin="round" fill="none" />
+    <circle cx="36" cy="10" r="2" className="fill-primary" />
+    <circle cx="42" cy="16" r="1.5" className="fill-primary/60" />
+    <circle cx="38" cy="22" r="1" className="fill-primary/40" />
+  </svg>
+);
+
+const NoAccountGraphic = (
+  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M24 6 L24 28" className="stroke-primary" strokeWidth="2.5" strokeLinecap="round" />
+    <path d="M18 22 L24 28 L30 22" className="stroke-primary" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    <line x1="14" y1="38" x2="34" y2="38" className="stroke-primary/40" strokeWidth="2.5" strokeLinecap="round" />
+    <circle cx="24" cy="38" r="2" className="fill-primary/60" />
+  </svg>
+);
+
 function LandingPage() {
   const [pollLink, setPollLink] = useState("");
   const navigate = useNavigate();
 
   const goToPoll = () => {
     if (!pollLink.trim()) return;
-    // Extract poll ID from URL or use as-is
     const match = pollLink.match(/poll\/([a-zA-Z0-9-]+)/);
     const pollId = match ? match[1] : pollLink.trim();
     navigate({ to: "/poll/$pollId", params: { pollId } });
   };
 
   return (
-    <main className="container mx-auto px-4 py-16 relative">
-      {/* Floating orbs */}
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div
-          className="absolute top-20 left-[10%] w-72 h-72 rounded-full opacity-[0.07] dark:opacity-[0.1] animate-float"
-          style={{ background: "radial-gradient(circle, oklch(0.72 0.19 140), transparent 70%)" }}
-        />
-        <div
-          className="absolute top-40 right-[15%] w-96 h-96 rounded-full opacity-[0.05] dark:opacity-[0.08] animate-float"
-          style={{ background: "radial-gradient(circle, oklch(0.50 0.15 180), transparent 70%)", animationDelay: "-2s" }}
-        />
-        <div
-          className="absolute bottom-20 left-[30%] w-64 h-64 rounded-full opacity-[0.06] dark:opacity-[0.09] animate-float"
-          style={{ background: "radial-gradient(circle, oklch(0.55 0.17 160), transparent 70%)", animationDelay: "-4s" }}
-        />
-      </div>
-
+    <main className="container mx-auto px-4 py-16">
       {/* Hero */}
-      <section className="text-center space-y-6 mb-20 animate-fade-in-up">
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight gradient-text leading-tight">
+      <section className="text-center space-y-8 mb-32 reveal d1">
+        <h1 className="font-display text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-tight">
           Decide Together,
           <br />
-          Instantly
+          <span className="text-primary">Instantly</span>
         </h1>
-        <p
-          className="text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto"
-          style={{ animation: "fade-in-up 0.5s ease-out 0.15s both" }}
-        >
+        <p className="text-xl leading-relaxed text-muted-foreground max-w-xl mx-auto reveal d2">
           Create polls with weighted voting, veto power, and AI-assisted options.
           No account required.
         </p>
-        <div style={{ animation: "fade-in-up 0.5s ease-out 0.3s both" }}>
+        <div className="reveal d3">
           <Button
             size="lg"
-            className="gradient-bg-animated text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.03] text-base px-8 py-3 h-auto animate-glow-pulse"
+            className="bg-primary text-primary-foreground btn-lift btn-glow text-base px-8 py-3 h-auto"
             render={<Link to="/create" />}
           >
             Create a Poll
@@ -65,11 +83,8 @@ function LandingPage() {
       </section>
 
       {/* Poll link input */}
-      <section
-        className="max-w-md mx-auto mb-20"
-        style={{ animation: "fade-in-up 0.5s ease-out 0.4s both" }}
-      >
-        <div className="glass rounded-xl p-4">
+      <section className="max-w-md mx-auto mb-32 reveal d4">
+        <div className="surface p-6">
           <p className="text-sm text-muted-foreground mb-2">Have a poll link?</p>
           <div className="flex gap-2">
             <Input
@@ -87,27 +102,27 @@ function LandingPage() {
       </section>
 
       {/* Feature grid */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-4xl mx-auto">
+      <section className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl mx-auto">
         <FeatureCard
-          icon={Scale}
+          graphic={WeightedVotingGraphic}
           title="Weighted Voting"
           description="Express conviction from 1-5"
           delay={0}
         />
         <FeatureCard
-          icon={ShieldBan}
+          graphic={VetoPowerGraphic}
           title="Veto Power"
           description="Disqualify unacceptable options"
           delay={1}
         />
         <FeatureCard
-          icon={Sparkles}
+          graphic={AISuggestionsGraphic}
           title="AI Suggestions"
           description="LLM-generated options"
           delay={2}
         />
         <FeatureCard
-          icon={Zap}
+          graphic={NoAccountGraphic}
           title="No Account Required"
           description="Create and vote instantly"
           delay={3}

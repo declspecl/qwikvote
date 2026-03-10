@@ -17,7 +17,7 @@ export function StepIndicator({ currentStep, totalSteps, labels }: StepIndicator
               className={cn(
                 "h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300",
                 i + 1 === currentStep
-                  ? "gradient-bg text-white shadow-md scale-110"
+                  ? "bg-primary text-primary-foreground shadow-md"
                   : i + 1 < currentStep
                     ? "bg-primary/20 text-primary"
                     : "bg-muted text-muted-foreground"
@@ -44,7 +44,7 @@ export function StepIndicator({ currentStep, totalSteps, labels }: StepIndicator
             <div className="relative h-0.5 w-8 sm:w-12 mb-5 sm:mb-4 bg-muted rounded-full overflow-hidden">
               <div
                 className={cn(
-                  "absolute inset-y-0 left-0 gradient-bg rounded-full transition-all duration-500 ease-out",
+                  "absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-500 ease-out",
                   i + 1 < currentStep ? "w-full" : "w-0"
                 )}
               />
