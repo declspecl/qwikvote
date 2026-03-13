@@ -3,6 +3,7 @@ import { useForm } from "@tanstack/react-form";
 import { useQueryState, parseAsInteger } from "nuqs";
 import { useState } from "react";
 import { GripVertical, Plus, X, Sparkles, Scale, ShieldBan, Lock } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
 import {
   DndContext,
   closestCenter,
@@ -136,8 +137,8 @@ function CreatePollPage() {
   const createPoll = useCreatePoll();
 
   const [options, setOptions] = useState<OptionItem[]>([
-    { id: crypto.randomUUID(), text: "" },
-    { id: crypto.randomUUID(), text: "" },
+    { id: uuidv4(), text: "" },
+    { id: uuidv4(), text: "" },
   ]);
 
   const [config, setConfig] = useState({
@@ -184,7 +185,7 @@ function CreatePollPage() {
   };
 
   const addOption = () => {
-    setOptions((prev) => [...prev, { id: crypto.randomUUID(), text: "" }]);
+    setOptions((prev) => [...prev, { id: uuidv4(), text: "" }]);
   };
 
   const removeOption = (id: string) => {
