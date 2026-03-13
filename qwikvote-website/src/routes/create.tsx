@@ -159,9 +159,7 @@ function CreatePollPage() {
       createPoll.mutate({
         title: value.title,
         description: value.description,
-        options: options
-          .filter((o) => o.text.trim())
-          .map((o) => ({ text: o.text.trim() })),
+        options: options.filter((o) => o.text.trim()).map((o) => o.text.trim()),
         password: passwordEnabled && password ? password : null,
         config,
       });

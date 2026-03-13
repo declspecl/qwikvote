@@ -47,7 +47,7 @@ export const createPollFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string(),
   options: z
-    .array(z.object({ text: z.string().min(1, "Option text is required") }))
+    .array(z.string().min(1, "Option text is required"))
     .min(2, "At least 2 options are required"),
   password: z.string().nullable(),
   config: pollConfigSchema,
