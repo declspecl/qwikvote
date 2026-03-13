@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -28,7 +29,7 @@ class PollConfig(BaseModel):
 class PollCreateRequest(BaseModel):
     title: str
     description: str = ""
-    options: list[PollOption]
+    options: list[str]
     password: str | None = None
     config: PollConfig = Field(default_factory=PollConfig)
 

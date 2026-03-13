@@ -7,16 +7,39 @@ from typing import Any
 
 import boto3
 from boto3.dynamodb.conditions import Key
+from botocore.config import Config
 from returns.result import Failure, Result, Success
 
 from poll.errors import PollError
 from poll.models import PollConfig, PollOption, PollResponse, PollResults, Vote
 
 _TABLE_NAME: str = os.environ.get("DYNAMODB_TABLE_NAME", "qwikvote-polls")
+_DDB_ENDPOINT_URL: str | None = os.environ.get("DYNAMODB_ENDPOINT_URL")
+_AWS_REGION: str = os.environ.get("AWS_REGION", "us-east-1")
+
+_BOTOCORE_CONFIG = Config(
+    # Make local-dev failures obvious instead of “hanging” for a long time.
+    connect_timeout=float(os.environ.get("AWS_CONNECT_TIMEOUT_SECONDS", "2")),
+    read_timeout=float(os.environ.get("AWS_READ_TIMEOUT_SECONDS", "5")),
+    retries={"max_attempts": int(os.environ.get("AWS_MAX_ATTEMPTS", "2")), "mode": "standard"},
+)
 
 
 def _table() -> Any:
-    return boto3.resource("dynamodb").Table(_TABLE_NAME)
+    if _DDB_ENDPOINT_URL:
+        # DynamoDB Local does not require real AWS credentials, but boto3 still expects them.
+        ddb = boto3.resource(
+            "dynamodb",
+            endpoint_url=_DDB_ENDPOINT_URL,
+            region_name=_AWS_REGION,
+            aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID", "local"),
+            aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY", "local"),
+            config=_BOTOCORE_CONFIG,
+        )
+    else:
+        ddb = boto3.resource("dynamodb", region_name=_AWS_REGION, config=_BOTOCORE_CONFIG)
+
+    return ddb.Table(_TABLE_NAME)
 
 
 def _poll_pk(poll_id: str) -> dict[str, str]:
