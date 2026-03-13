@@ -10,7 +10,17 @@ import {
   type CloseRequest,
 } from "./schemas";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const PROD_API_BASE_URL = "https://9zx14x4ipk.execute-api.us-east-1.amazonaws.com/v1";
+const DEV_API_BASE_URL = "http://localhost:8000";
+
+const API_BASE_URL = import.meta.env.PROD ? PROD_API_BASE_URL : DEV_API_BASE_URL;
+
+function joinUrl(baseUrl: string, path: string): string {
+  const normalizedBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  return `${normalizedBase}${normalizedPath}`;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -25,7 +35,7 @@ export class ApiError extends Error {
 }
 
 async function apiFetch<T>(path: string, schema: ZodType<T>, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetch(joinUrl(API_BASE_URL, path), {
     ...init,
     headers: {
       "Content-Type": "application/json",
