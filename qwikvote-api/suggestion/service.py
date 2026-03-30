@@ -24,7 +24,7 @@ def generate_suggestions(
     for a poll given its title and description.
     Returns Failure if the API key is missing or the call fails.
     """
-    api_key = "AIzaSyB3iCIYI4vedWBmuKxEhP7G-6Md8grMVe0"
+    api_key = ""
     if not api_key:
         return Failure(SuggestionError("GEMINI_API_KEY is not configured"))
 
@@ -59,7 +59,7 @@ def explain_results(title: str, options: list[str], scores: dict) -> str:
     Give a short, clear explanation of what the results mean and any insights.
     """
 
-    client = genai.Client(api_key="AIzaSyB3iCIYI4vedWBmuKxEhP7G-6Md8grMVe0")
+    client = genai.Client(api_key="")
     response = client.models.generate_content(
         model="gemini-3-flash-preview",
         contents=prompt,
