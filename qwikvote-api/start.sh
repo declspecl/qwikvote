@@ -13,4 +13,5 @@ fi
 
 export DYNAMODB_ENDPOINT_URL="http://localhost:8001"
 export AWS_REGION="us-east-1"
-./.venv/bin/python main.py
+
+./.venv/bin/uvicorn main:app --reload --host 0.0.0.0 --port 8000

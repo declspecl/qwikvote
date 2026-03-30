@@ -12,17 +12,19 @@ class SuggestionError:
     detail: str
 
 
-_MODEL = "gemini-3.0-flash"
+_MODEL = "gemini-3-flash-preview"
 _MAX_SUGGESTIONS = 5
 
 
-def generate_suggestions(title: str, description: str) -> Result[list[str], SuggestionError]:
+def generate_suggestions(
+    title: str, description: str
+) -> Result[list[str], SuggestionError]:
     """
     Calls Gemini to produce up to _MAX_SUGGESTIONS additional option texts
     for a poll given its title and description.
     Returns Failure if the API key is missing or the call fails.
     """
-    api_key = os.environ.get("GEMINI_API_KEY", "")
+    api_key = "AIzaSyB3iCIYI4vedWBmuKxEhP7G-6Md8grMVe0"
     if not api_key:
         return Failure(SuggestionError("GEMINI_API_KEY is not configured"))
 
@@ -43,3 +45,24 @@ def generate_suggestions(title: str, description: str) -> Result[list[str], Sugg
         return Success(suggestions[:_MAX_SUGGESTIONS])
     except Exception as exc:
         return Failure(SuggestionError(str(exc)))
+
+
+def explain_results(title: str, options: list[str], scores: dict) -> str:
+    prompt = f"""
+    Explain the results of this poll:
+
+    Title: {title}
+
+    Options and scores:
+    {scores}
+
+    Give a short, clear explanation of what the results mean and any insights.
+    """
+
+    client = genai.Client(api_key="AIzaSyB3iCIYI4vedWBmuKxEhP7G-6Md8grMVe0")
+    response = client.models.generate_content(
+        model="gemini-3-flash-preview",
+        contents=prompt,
+    )
+
+    return response.text

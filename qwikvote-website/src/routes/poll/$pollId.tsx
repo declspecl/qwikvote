@@ -18,8 +18,10 @@ import { pollQueryOptions, useSubmitVote, useClosePoll } from "@/features/poll/q
 import { useVoteStore } from "@/stores/vote-store";
 import { usePasswordStore } from "@/stores/password-store";
 import { queryClient } from "@/lib/query-client";
-import { ApiError } from "@/lib/api-client";
+import { ApiError, getExplanation } from "@/lib/api-client";
 import type { PollResponse, VoteResponse } from "@/lib/schemas";
+
+const DEV_API_BASE_URL = "http://localhost:8000";
 
 export const Route = createFileRoute("/poll/$pollId")({
   loader: ({ params }) =>
@@ -59,9 +61,14 @@ function PollPage() {
   const { pollId } = Route.useParams();
   const { data: poll } = useSuspenseQuery(pollQueryOptions(pollId));
   const { hasVoted } = useVoteStore();
+  const [explanation, setExplanation] = useState<string | null>(null); 
+  const [loadingExplanation, setLoadingExplanation] = useState(false);
 
   if (poll.status === "closed") {
-    return <PollFinalResults poll={poll} />;
+    return <PollFinalResults poll={poll} pollId={pollId} explanation={explanation}
+        setExplanation={setExplanation}
+        loadingExplanation={loadingExplanation}
+        setLoadingExplanation={setLoadingExplanation}/>;
   }
 
   if (hasVoted(pollId)) {
@@ -71,7 +78,7 @@ function PollPage() {
   return <PollVotingView poll={poll} pollId={pollId} />;
 }
 
-function PollVotingView({ poll, pollId }: { poll: PollResponse; pollId: string }) {
+function PollVotingView({ poll, pollId}: { poll: PollResponse; pollId: string;}) {
   const { selectedOptionId, weight, setSelection, setWeight, markVoted, reset } =
     useVoteStore();
   const { getPassword, setPassword: storePassword } = usePasswordStore();
@@ -243,8 +250,15 @@ function PollLiveResults({
 
 const MEDAL_COLORS = ["text-yellow-500", "text-gray-400", "text-amber-600"];
 
-function PollFinalResults({ poll }: { poll: PollResponse }) {
+function PollFinalResults({ poll, pollId,explanation,
+  setExplanation,
+  loadingExplanation,
+  setLoadingExplanation,  }: { poll: PollResponse; pollId: string; explanation: string | null;
+  setExplanation: (text: string | null) => void;
+  loadingExplanation: boolean;
+  setLoadingExplanation: (loading: boolean) => void; }) {
   const results = poll.results;
+
   if (!results) return null;
 
   const scores = results.scores;
@@ -287,7 +301,49 @@ function PollFinalResults({ poll }: { poll: PollResponse }) {
             )}
           </CardContent>
         </Card>
+        
       )}
+
+      <Card className="mt-4">
+        <CardContent className="p-4">
+          <Button
+            onClick={async () => {
+              setLoadingExplanation(true);
+              try {
+                const res = await fetch(`${DEV_API_BASE_URL}/llm/explain`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    poll_id: poll.poll_id,
+                    title: poll.title,
+                    options: poll.options.map(o => o.text),
+                    scores: results.scores,
+                  }),
+                });
+                const data = await res.json();
+                setExplanation(data.explanation);
+              } catch (e) {
+                console.error(e);
+              } finally {
+                setLoadingExplanation(false);
+              }
+            }}
+          >
+            Explain Results (AI)
+          </Button>
+
+          {loadingExplanation && (
+            <p className="text-sm mt-2 text-muted-foreground">Thinking...</p>
+          )}
+
+          {explanation && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {explanation}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+      
 
       <div className="space-y-3">
         {sortedOptions.map((opt, rank) => {

@@ -85,3 +85,22 @@ export function closePoll(pollId: string, body: CloseRequest): Promise<PollRespo
     body: JSON.stringify(body),
   });
 }
+
+export async function getSuggestions(title: string, description: string) {
+  const res = await fetch(`${DEV_API_BASE_URL}/llm/suggestions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, description }),
+  });
+
+  if (!res.ok) throw new Error("Failed to get suggestions");
+
+  const data = await res.json();
+  return data.suggestions;
+}
+
+export async function getExplanation(pollId: string) {
+  const res = await fetch(`http://localhost:8000/llm/explain/${pollId}`);
+  if (!res.ok) throw new Error("Failed to explain results");
+  return res.text();
+}

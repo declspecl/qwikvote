@@ -67,3 +67,4 @@ def close_poll(poll_id: str, body: CloseRequest) -> PollResponse:
             return poll
         case Failure(error):
             raise _to_http(error)
+            

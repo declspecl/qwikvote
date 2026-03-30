@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
 from poll.routes import router as poll_router
+from suggestion.routes import router as llm_router
 
 app = FastAPI(
     title="QwikVote API",
@@ -20,6 +21,7 @@ app.add_middleware(
 )
 
 app.include_router(poll_router)
+app.include_router(llm_router)
 
 
 @app.get("/health", tags=["meta"])

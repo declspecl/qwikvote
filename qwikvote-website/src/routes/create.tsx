@@ -30,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StepIndicator } from "@/components/shared/step-indicator";
 import { useCreatePoll } from "@/features/poll/queries";
+import { getSuggestions } from "@/lib/api-client";
 
 export const Route = createFileRoute("/create")({
   component: CreatePollPage,
@@ -294,9 +295,41 @@ function CreatePollPage() {
                 />
               </div>
               {config.llm_suggestions_enabled && (
-                <p className="text-sm text-muted-foreground">
-                  AI will generate additional options based on your title and description when the poll is created.
-                </p>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    AI can generate suggestions based on your poll.
+                  </p>
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={async () => {
+                      const title = form.getFieldValue("title");
+                      const description = form.getFieldValue("description");
+
+                      if (!title || !description) {
+                        console.warn("Title/description required");
+                        return;
+                      }
+
+                      try {
+                        const suggestions = await getSuggestions(title, description);
+
+                        const newOptions = suggestions.map((text: string) => ({
+                          id: uuidv4(),
+                          text,
+                        }));
+
+                        setOptions((prev) => [...prev, ...newOptions]);
+                      } catch (e) {
+                        console.error(e);
+                      }
+                    }}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate Suggestions
+                  </Button>
+                </div>
               )}
             </div>
           )}
