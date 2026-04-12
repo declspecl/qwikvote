@@ -87,6 +87,10 @@ export class VotingServiceStack extends cdk.Stack {
 
         poll.addResource("close").addMethod("POST", integration);
 
+        const llm = votingApi.root.addResource("llm");
+        llm.addResource("explain").addMethod("POST", integration);
+        llm.addResource("suggestions").addMethod("POST", integration);
+
         this.apiUrl = votingApi.url;
 
         new cdk.CfnOutput(this, "ApiUrl", {
