@@ -22,7 +22,7 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  AWS_DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+  AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
   API_STACK_NAME: qwikvote-alpha
   WEBSITE_STACK_NAME: qwikvote-website-alpha
 
