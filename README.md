@@ -67,6 +67,7 @@ Two workflows are included:
 Required GitHub repository configuration:
 
 - Repository secret `AWS_DEPLOY_ROLE_ARN`
+- Repository secret `GEMINI_API_KEY`
 - Repository secret `RANDOM_ORG_API_KEY`
 
 The deploy workflow uses GitHub OIDC via `aws-actions/configure-aws-credentials`, so `AWS_DEPLOY_ROLE_ARN` should trust GitHub Actions for this repository.

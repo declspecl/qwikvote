@@ -59,6 +59,7 @@ jobs:
         working-directory: qwikvote-cdk
         run: pnpm exec cdk deploy "$API_STACK_NAME" --require-approval never --outputs-file cdk-outputs.json
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           RANDOM_ORG_API_KEY: ${{ secrets.RANDOM_ORG_API_KEY }}
       - name: Read API URL
         id: api
@@ -79,6 +80,7 @@ jobs:
         working-directory: qwikvote-cdk
         run: pnpm exec cdk deploy "$WEBSITE_STACK_NAME" --require-approval never --outputs-file cdk-outputs.json
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           RANDOM_ORG_API_KEY: ${{ secrets.RANDOM_ORG_API_KEY }}
       - name: Publish deployment summary
         working-directory: qwikvote-cdk

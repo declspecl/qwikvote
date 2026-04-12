@@ -6,7 +6,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import type { Construct } from "constructs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { RANDOM_ORG_API_KEY } from "../configuration/application";
+import { GEMINI_API_KEY, RANDOM_ORG_API_KEY } from "../configuration/application";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,6 +49,7 @@ export class VotingServiceStack extends cdk.Stack {
             timeout: cdk.Duration.seconds(30),
             environment: {
                 DYNAMODB_TABLE_NAME: pollsTable.tableName,
+                GEMINI_API_KEY: GEMINI_API_KEY,
                 RANDOM_ORG_API_KEY: RANDOM_ORG_API_KEY,
             },
             bundling: {
