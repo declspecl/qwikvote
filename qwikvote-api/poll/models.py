@@ -51,6 +51,7 @@ class PollResults(BaseModel):
     winner_text: str | None = None
     result_justification: str = ""
     veto_disqualified: list[str] = Field(default_factory=list)
+    ai_explanation: str | None = None
 
 
 class PollResponse(BaseModel):

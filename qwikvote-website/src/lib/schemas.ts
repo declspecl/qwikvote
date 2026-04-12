@@ -19,6 +19,7 @@ export const pollResultsSchema = z.object({
   winner_text: z.string().nullable(),
   result_justification: z.string(),
   veto_disqualified: z.array(z.string()),
+  ai_explanation: z.string().nullable().optional(),
 });
 
 export const pollResponseSchema = z.object({

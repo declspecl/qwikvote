@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
+import { useStore } from "@tanstack/react-store";
 import { useQueryState, parseAsInteger } from "nuqs";
 import { useState } from "react";
-import { GripVertical, Plus, X, Sparkles, Scale, ShieldBan, Lock } from "lucide-react";
+import { GripVertical, Plus, X, Sparkles, Scale, ShieldBan, Lock, Loader2 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import { toast } from "sonner";
 import {
   DndContext,
   closestCenter,
@@ -49,12 +51,14 @@ function SortableOption({
   onRemove,
   onChange,
   canRemove,
+  disabled,
 }: {
   item: OptionItem;
   index: number;
   onRemove: () => void;
   onChange: (text: string) => void;
   canRemove: boolean;
+  disabled?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.id,
@@ -69,15 +73,17 @@ function SortableOption({
     <div ref={setNodeRef} style={style} className="flex items-center gap-2 group">
       <button
         type="button"
+        disabled={disabled}
         {...attributes}
         {...listeners}
-        className="cursor-grab touch-none text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-accent/50"
+        className="cursor-grab touch-none text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-accent/50 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <GripVertical className="h-5 w-5" />
       </button>
       <Input
         placeholder={`Option ${index + 1}`}
         value={item.text}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         className="flex-1 bg-background/50"
       />
@@ -86,6 +92,7 @@ function SortableOption({
           type="button"
           variant="ghost"
           size="icon"
+          disabled={disabled}
           onClick={onRemove}
           className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
         >
@@ -145,11 +152,11 @@ function CreatePollPage() {
   const [config, setConfig] = useState({
     weighted_voting: false,
     veto_enabled: false,
-    llm_suggestions_enabled: false,
   });
 
   const [passwordEnabled, setPasswordEnabled] = useState(false);
   const [password, setPassword] = useState("");
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -162,7 +169,7 @@ function CreatePollPage() {
         description: value.description,
         options: options.filter((o) => o.text.trim()).map((o) => o.text.trim()),
         password: passwordEnabled && password ? password : null,
-        config,
+        config: { ...config, llm_suggestions_enabled: false },
       });
     },
   });
@@ -195,19 +202,15 @@ function CreatePollPage() {
     setOptions((prev) => prev.map((o) => (o.id === id ? { ...o, text } : o)));
   };
 
-  const canProceedStep1 = () => {
-    const title = form.getFieldValue("title");
-    return Boolean(title && title.trim());
-  };
+  const title = useStore(form.store, (s) => s.values.title);
 
-  const canProceedStep2 = () => {
-    const filledOptions = options.filter((o) => o.text.trim());
-    return filledOptions.length >= 2;
-  };
+  const canProceed =
+    (step === 1 && Boolean(title.trim())) ||
+    (step === 2 && options.filter((o) => o.text.trim()).length >= 2) ||
+    step === 3;
 
   const next = () => {
-    if (step === 1 && !canProceedStep1()) return;
-    if (step === 2 && !canProceedStep2()) return;
+    if (!canProceed) return;
     setStep(Math.min(step + 1, 4));
   };
 
@@ -269,6 +272,7 @@ function CreatePollPage() {
                         item={item}
                         index={index}
                         canRemove={options.length > 2}
+                        disabled={suggestionsLoading}
                         onRemove={() => removeOption(item.id)}
                         onChange={(text) => updateOption(item.id, text)}
                       />
@@ -276,61 +280,65 @@ function CreatePollPage() {
                   </div>
                 </SortableContext>
               </DndContext>
-              <Button type="button" variant="outline" size="sm" onClick={addOption} className="hover:bg-primary/10 transition-colors">
-                <Plus className="h-4 w-4 mr-1" />
-                Add Option
-              </Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" disabled={suggestionsLoading} onClick={addOption} className="hover:bg-primary/10 transition-colors">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Option
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={suggestionsLoading}
+                  className="hover:bg-primary/10 transition-colors"
+                  onClick={async () => {
+                    const title = form.getFieldValue("title");
+                    const description = form.getFieldValue("description");
 
-              <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-muted-foreground" />
-                  <Label htmlFor="llm-toggle">Use AI to suggest options</Label>
-                </div>
-                <Switch
-                  id="llm-toggle"
-                  checked={config.llm_suggestions_enabled}
-                  onCheckedChange={(checked) =>
-                    setConfig((c) => ({ ...c, llm_suggestions_enabled: checked }))
-                  }
-                />
+                    if (!title) {
+                      toast.error("Add a title first so the AI knows what to suggest");
+                      return;
+                    }
+
+                    setSuggestionsLoading(true);
+                    try {
+                      const existingTexts = options
+                        .map((o) => o.text.trim())
+                        .filter(Boolean);
+
+                      const suggestions = await getSuggestions(
+                        title,
+                        description || "",
+                        existingTexts
+                      );
+
+                      const newOptions = suggestions.map((text: string) => ({
+                        id: uuidv4(),
+                        text,
+                      }));
+
+                      setOptions((prev) => {
+                        // If the user only has the 2 default empties, replace them
+                        const allEmpty = prev.length === 2 && prev.every((o) => !o.text.trim());
+                        return allEmpty ? newOptions : [...prev, ...newOptions];
+                      });
+
+                      toast.success(`Added ${suggestions.length} suggestions`);
+                    } catch {
+                      toast.error("Couldn't generate suggestions — try again");
+                    } finally {
+                      setSuggestionsLoading(false);
+                    }
+                  }}
+                >
+                  {suggestionsLoading ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-1" />
+                  )}
+                  {suggestionsLoading ? "Generating..." : "Suggest with AI"}
+                </Button>
               </div>
-              {config.llm_suggestions_enabled && (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    AI can generate suggestions based on your poll.
-                  </p>
-
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={async () => {
-                      const title = form.getFieldValue("title");
-                      const description = form.getFieldValue("description");
-
-                      if (!title || !description) {
-                        console.warn("Title/description required");
-                        return;
-                      }
-
-                      try {
-                        const suggestions = await getSuggestions(title, description);
-
-                        const newOptions = suggestions.map((text: string) => ({
-                          id: uuidv4(),
-                          text,
-                        }));
-
-                        setOptions((prev) => [...prev, ...newOptions]);
-                      } catch (e) {
-                        console.error(e);
-                      }
-                    }}
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate Suggestions
-                  </Button>
-                </div>
-              )}
             </div>
           )}
 
@@ -361,7 +369,7 @@ function CreatePollPage() {
               <SettingCard
                 icon={Lock}
                 title="Password Protect"
-                description="Require a password to vote"
+                description="Require a password to view and vote"
                 id="password-toggle"
                 checked={passwordEnabled}
                 onCheckedChange={setPasswordEnabled}
@@ -414,7 +422,6 @@ function CreatePollPage() {
                 <div className="flex flex-wrap gap-2">
                   {config.weighted_voting && <Badge variant="secondary">Weighted Voting</Badge>}
                   {config.veto_enabled && <Badge variant="secondary">Veto Power</Badge>}
-                  {config.llm_suggestions_enabled && <Badge variant="secondary">AI Suggestions</Badge>}
                   {passwordEnabled && password && <Badge variant="secondary">Password Protected</Badge>}
                 </div>
               </div>
@@ -427,7 +434,7 @@ function CreatePollPage() {
               type="button"
               variant="outline"
               onClick={back}
-              disabled={step === 1}
+              disabled={step === 1 || suggestionsLoading}
               className="hover:bg-accent/50 transition-colors"
             >
               Back
@@ -436,6 +443,7 @@ function CreatePollPage() {
               <Button
                 type="button"
                 onClick={next}
+                disabled={!canProceed || suggestionsLoading}
                 className="bg-primary text-primary-foreground btn-lift"
               >
                 Next

@@ -16,6 +16,7 @@ class ExplainRequest(BaseModel):
 class SuggestionRequest(BaseModel):
     title: str
     description: str
+    existing_options: list[str] = []
 
 
 @router.post("/explain")
@@ -30,7 +31,7 @@ def explain_poll(req: ExplainRequest):
 
 @router.post("/suggestions")
 def suggest_options(req: SuggestionRequest):
-    result = service.generate_suggestions(req.title, req.description)
+    result = service.generate_suggestions(req.title, req.description, req.existing_options)
 
     match result:
         case Success(suggestions):

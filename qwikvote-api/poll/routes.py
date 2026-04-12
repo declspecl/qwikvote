@@ -43,8 +43,8 @@ def create_poll(body: PollCreateRequest) -> PollResponse:
 
 
 @router.get("/{poll_id}", response_model=PollResponse)
-def get_poll(poll_id: str) -> PollResponse:
-    match service.get_poll(poll_id):
+def get_poll(poll_id: str, password: str | None = None) -> PollResponse:
+    match service.get_poll(poll_id, password):
         case Success(poll):
             return poll
         case Failure(error):

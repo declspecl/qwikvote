@@ -1,11 +1,24 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Trophy, Dice6, Medal } from "lucide-react";
+import Markdown from "react-markdown";
+import { Trophy, Dice6, Medal, Loader2, Sparkles, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { OptionCard } from "@/components/shared/option-card";
 import { WeightPicker } from "@/components/shared/weight-picker";
 import { VetoButton } from "@/components/shared/veto-button";
@@ -18,7 +31,7 @@ import { pollQueryOptions, useSubmitVote, useClosePoll } from "@/features/poll/q
 import { useVoteStore } from "@/stores/vote-store";
 import { usePasswordStore } from "@/stores/password-store";
 import { queryClient } from "@/lib/query-client";
-import { ApiError, getExplanation } from "@/lib/api-client";
+import { ApiError, getPoll as fetchPoll } from "@/lib/api-client";
 import type { PollResponse, VoteResponse } from "@/lib/schemas";
 
 export const Route = createFileRoute("/poll/$pollId")({
@@ -44,6 +57,10 @@ function PollError({ error }: { error: Error }) {
     );
   }
 
+  if (error instanceof ApiError && error.status === 403) {
+    return <PasswordGate />;
+  }
+
   return (
     <div className="container mx-auto max-w-2xl px-4 py-16 text-center space-y-4 animate-fade-in-up">
       <h1 className="font-display text-2xl font-bold">Something went wrong</h1>
@@ -55,18 +72,84 @@ function PollError({ error }: { error: Error }) {
   );
 }
 
+function PasswordGate() {
+  const { pollId } = Route.useParams();
+  const { setPassword: storePassword } = usePasswordStore();
+  const router = useRouter();
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleUnlock = async () => {
+    if (!password.trim()) return;
+    setLoading(true);
+    setError(false);
+
+    try {
+      // Test the password before committing to it
+      await fetchPoll(pollId, password);
+
+      // Password is correct — store it so all future fetches use it
+      storePassword(pollId, password);
+
+      // Clear cached error + refetch with the stored password
+      queryClient.removeQueries({ queryKey: ["polls", pollId] });
+      await router.invalidate();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 403) {
+        setError(true);
+      }
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="container mx-auto max-w-md px-4 py-16 animate-fade-in-up">
+      <Card className="surface">
+        <CardContent className="p-8 text-center space-y-5">
+          <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <Lock className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="font-display text-xl font-bold">This poll is locked</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Enter the password to view and vote on this poll.
+            </p>
+          </div>
+          <div className="space-y-3">
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(false); }}
+              onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
+              className={`bg-background/50 ${error ? "border-destructive ring-1 ring-destructive/30" : ""}`}
+            />
+            {error && (
+              <p className="text-sm text-destructive">Wrong password — try again</p>
+            )}
+            <Button
+              className="w-full bg-primary text-primary-foreground btn-lift"
+              onClick={handleUnlock}
+              disabled={loading || !password.trim()}
+            >
+              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              {loading ? "Checking..." : "Unlock Poll"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </main>
+  );
+}
+
 function PollPage() {
   const { pollId } = Route.useParams();
   const { data: poll } = useSuspenseQuery(pollQueryOptions(pollId));
   const { hasVoted } = useVoteStore();
-  const [explanation, setExplanation] = useState<string | null>(null); 
-  const [loadingExplanation, setLoadingExplanation] = useState(false);
 
   if (poll.status === "closed") {
-    return <PollFinalResults poll={poll} explanation={explanation}
-        setExplanation={setExplanation}
-        loadingExplanation={loadingExplanation}
-        setLoadingExplanation={setLoadingExplanation}/>;
+    return <PollFinalResults poll={poll} />;
   }
 
   if (hasVoted(pollId)) {
@@ -204,42 +287,105 @@ function PollLiveResults({
 }) {
   const closePoll = useClosePoll(pollId);
   const { getPassword } = usePasswordStore();
+  const { isOwner } = useVoteStore();
   const scores = initialScores ?? {};
+  const hasScores = Object.values(scores).some((v) => v > 0);
   const maxScore = Math.max(...Object.values(scores), 1);
+  const ownsThisPoll = isOwner(pollId);
 
   const handleClose = () => {
     const pw = getPassword(pollId);
     closePoll.mutate({ password: pw });
   };
 
+  if (closePoll.isPending) {
+    return (
+      <main className="container mx-auto max-w-2xl px-4 py-16 animate-fade-in-up">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+          <h1 className="font-display text-2xl font-bold">Closing poll...</h1>
+          <p className="text-muted-foreground">
+            Calculating results and generating AI analysis. This may take a moment.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="container mx-auto max-w-2xl px-4 py-8 animate-fade-in-up">
       <Badge className="mb-4 bg-primary text-primary-foreground border-0">Your vote is in!</Badge>
-      <h1 className="font-display text-2xl font-bold mb-6">{poll.title}</h1>
+      <h1 className="font-display text-2xl font-bold mb-2">{poll.title}</h1>
+      {poll.description && (
+        <p className="text-muted-foreground mb-6">{poll.description}</p>
+      )}
 
-      <div className="space-y-3">
-        {poll.options.map((opt, i) => {
-          const score = scores[opt.option_id] ?? 0;
-          return (
-            <div key={opt.option_id} className="flex items-center gap-3">
-              <span className="w-32 truncate text-sm font-medium">{opt.text}</span>
-              <ScoreBar score={score} max={maxScore} delay={i} />
-              <span className="w-10 text-right text-sm font-medium text-muted-foreground">
-                {score}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      {hasScores ? (
+        <>
+          <p className="text-sm text-muted-foreground mb-4">
+            Scores as of your vote — final results will appear once the poll is closed.
+          </p>
+          <div className="space-y-3">
+            {poll.options.map((opt, i) => {
+              const score = scores[opt.option_id] ?? 0;
+              return (
+                <div key={opt.option_id} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{opt.text}</span>
+                    <span className="text-sm font-medium text-muted-foreground ml-3 shrink-0">
+                      {score}
+                    </span>
+                  </div>
+                  <ScoreBar score={score} max={maxScore} delay={i} />
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-muted-foreground mb-4">
+            Waiting for the poll to close. Final results will appear here.
+          </p>
+          <div className="space-y-2">
+            {poll.options.map((opt) => (
+              <div key={opt.option_id} className="surface p-3 text-sm font-medium">
+                {opt.text}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
-      <Button
-        variant="destructive"
-        className="mt-8 btn-lift"
-        onClick={handleClose}
-        disabled={closePoll.isPending}
-      >
-        {closePoll.isPending ? "Closing..." : "Close Poll"}
-      </Button>
+      {ownsThisPoll && (
+        <AlertDialog>
+          <AlertDialogTrigger
+            render={
+              <Button
+                variant="destructive"
+                className="mt-8 btn-lift"
+              />
+            }
+          >
+            Close Poll
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Close this poll?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently end voting for all participants and calculate
+                the final results. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep Open</AlertDialogCancel>
+              <AlertDialogAction onClick={handleClose}>
+                Close Poll
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       <SharePanel />
     </main>
@@ -248,16 +394,12 @@ function PollLiveResults({
 
 const MEDAL_COLORS = ["text-yellow-500", "text-gray-400", "text-amber-600"];
 
-function PollFinalResults({ poll, explanation,
-  setExplanation,
-  loadingExplanation,
-  setLoadingExplanation,  }: { poll: PollResponse; explanation: string | null;
-  setExplanation: (text: string | null) => void;
-  loadingExplanation: boolean;
-  setLoadingExplanation: (loading: boolean) => void; }) {
+function PollFinalResults({ poll }: { poll: PollResponse }) {
   const results = poll.results;
 
   if (!results) return null;
+
+  const explanation = results.ai_explanation ?? null;
 
   const scores = results.scores;
   const maxScore = Math.max(...Object.values(scores), 1);
@@ -299,44 +441,7 @@ function PollFinalResults({ poll, explanation,
             )}
           </CardContent>
         </Card>
-        
       )}
-
-      <Card className="mt-4">
-        <CardContent className="p-4">
-          <Button
-            onClick={async () => {
-              setLoadingExplanation(true);
-              try {
-                const nextExplanation = await getExplanation({
-                  poll_id: poll.poll_id,
-                  title: poll.title,
-                  options: poll.options.map((option) => option.text),
-                  scores: results.scores,
-                });
-                setExplanation(nextExplanation);
-              } catch (e) {
-                console.error(e);
-              } finally {
-                setLoadingExplanation(false);
-              }
-            }}
-          >
-            Explain Results (AI)
-          </Button>
-
-          {loadingExplanation && (
-            <p className="text-sm mt-2 text-muted-foreground">Thinking...</p>
-          )}
-
-          {explanation && (
-            <p className="mt-3 text-sm text-muted-foreground">
-              {explanation}
-            </p>
-          )}
-        </CardContent>
-      </Card>
-      
 
       <div className="space-y-3">
         {sortedOptions.map((opt, rank) => {
@@ -346,35 +451,53 @@ function PollFinalResults({ poll, explanation,
           return (
             <div
               key={opt.option_id}
-              className={`flex items-center gap-3 transition-opacity reveal`}
+              className={`transition-opacity reveal`}
               style={{
                 animationDelay: `${rank * 80}ms`,
                 opacity: isVetoed ? 0.4 : undefined,
               }}
             >
-              <span className="w-6 flex items-center justify-center">
-                {isTopThree ? (
-                  <Medal className={`h-4 w-4 ${MEDAL_COLORS[rank]}`} />
-                ) : (
-                  <span className="text-sm text-muted-foreground">#{rank + 1}</span>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-6 flex items-center justify-center shrink-0">
+                  {isTopThree ? (
+                    <Medal className={`h-4 w-4 ${MEDAL_COLORS[rank]}`} />
+                  ) : (
+                    <span className="text-sm text-muted-foreground">#{rank + 1}</span>
+                  )}
+                </span>
+                <span className={`text-sm font-medium ${isVetoed ? "line-through text-destructive/70" : ""}`}>
+                  {opt.text}
+                </span>
+                {isVetoed && (
+                  <Badge variant="destructive" className="text-xs shrink-0">
+                    Vetoed
+                  </Badge>
                 )}
-              </span>
-              <span className={`w-32 truncate text-sm font-medium ${isVetoed ? "line-through text-destructive/70" : ""}`}>
-                {opt.text}
-              </span>
-              <ScoreBar score={score} max={maxScore} delay={rank} />
-              <span className="w-10 text-right text-sm font-medium text-muted-foreground">
-                {score}
-              </span>
-              {isVetoed && (
-                <Badge variant="destructive" className="text-xs">
-                  Vetoed
-                </Badge>
-              )}
+                <span className="ml-auto text-sm font-medium text-muted-foreground shrink-0">
+                  {score}
+                </span>
+              </div>
+              <div className="pl-8">
+                <ScoreBar score={score} max={maxScore} delay={rank} />
+              </div>
             </div>
           );
         })}
       </div>
+
+      {explanation && (
+        <Card className="mt-6">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">AI Analysis</span>
+            </div>
+            <div className="prose prose-sm max-w-none text-sm text-muted-foreground [&_h1]:text-base [&_h1]:font-semibold [&_h1]:text-foreground [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-foreground [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-foreground [&_strong]:text-foreground [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_p]:my-1.5">
+              <Markdown>{explanation}</Markdown>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <SharePanel />
     </main>

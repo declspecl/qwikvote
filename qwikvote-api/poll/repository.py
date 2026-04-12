@@ -179,6 +179,7 @@ def save_poll_results(
     result_justification: str,
     scores: dict[str, float],
     veto_disqualified: list[str],
+    ai_explanation: str | None = None,
 ) -> Result[PollResponse, PollError]:
     results = PollResults(
         scores=scores,
@@ -186,6 +187,7 @@ def save_poll_results(
         winner_text=winner_text,
         result_justification=result_justification,
         veto_disqualified=veto_disqualified,
+        ai_explanation=ai_explanation,
     )
 
     try:

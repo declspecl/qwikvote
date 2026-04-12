@@ -17,22 +17,31 @@ _MAX_SUGGESTIONS = 5
 
 
 def generate_suggestions(
-    title: str, description: str
+    title: str, description: str, existing_options: list[str] | None = None
 ) -> Result[list[str], SuggestionError]:
     """
     Calls Gemini to produce up to _MAX_SUGGESTIONS additional option texts
     for a poll given its title and description.
     Returns Failure if the API key is missing or the call fails.
     """
-    api_key = ""
     api_key = os.environ.get("GEMINI_API_KEY", "")
     if not api_key:
         return Failure(SuggestionError("GEMINI_API_KEY is not configured"))
+
+    existing_block = ""
+    if existing_options:
+        formatted = "\n".join(f"- {opt}" for opt in existing_options)
+        existing_block = (
+            f"The user has already added these options:\n{formatted}\n\n"
+            f"Do NOT repeat or closely rephrase any of them. "
+            f"Generate options that complement and fill gaps in the existing set.\n\n"
+        )
 
     prompt = (
         f"You are helping create options for an online poll.\n"
         f'Poll title: "{title}"\n'
         f'Poll description: "{description}"\n\n'
+        f"{existing_block}"
         f"Generate exactly {_MAX_SUGGESTIONS} concise, distinct poll options "
         f"that participants could vote on. Return only the options, one per line, "
         f"with no numbering, bullets, or extra commentary."

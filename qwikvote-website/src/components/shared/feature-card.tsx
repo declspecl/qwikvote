@@ -8,7 +8,7 @@ interface FeatureCardProps {
 export function FeatureCard({ graphic, title, description, delay = 0 }: FeatureCardProps) {
   return (
     <div
-      className="surface p-8 text-left btn-lift cursor-default reveal"
+      className="surface p-8 text-left hover:shadow-lg transition-shadow duration-200 reveal"
       style={{ animationDelay: `${500 + delay * 80}ms` }}
     >
       <div className="mb-4">{graphic}</div>

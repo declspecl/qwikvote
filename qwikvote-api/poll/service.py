@@ -30,7 +30,8 @@ def _compute_scores(
     options: list[PollOption],
     config: PollConfig,
 ) -> dict[str, float]:
-    grouped: dict[str, list[Vote]] = groupby(lambda v: v.option_id, votes)
+    regular_votes = [v for v in votes if not v.is_veto]
+    grouped: dict[str, list[Vote]] = groupby(lambda v: v.option_id, regular_votes)
     scored: dict[str, float] = valmap(
         lambda grp: float(sum(v.weight for v in grp))
         if config.weighted_voting
@@ -116,7 +117,7 @@ def create_poll(request: PollCreateRequest) -> Result[PollResponse, PollError]:
     options = [PollOption(text=text) for text in request.options]
 
     if request.config.llm_suggestions_enabled:
-        suggestion_result = generate_suggestions(request.title, request.description)
+        suggestion_result = generate_suggestions(request.title, request.description, request.options)
         match suggestion_result:
             case Success(suggested_texts):
                 suggested = [PollOption(text=t) for t in suggested_texts]
@@ -135,8 +136,20 @@ def create_poll(request: PollCreateRequest) -> Result[PollResponse, PollError]:
     )
 
 
-def get_poll(poll_id: str) -> Result[PollResponse, PollError]:
-    return repo.get_poll(poll_id)
+def get_poll(poll_id: str, password: str | None = None) -> Result[PollResponse, PollError]:
+    poll_and_pw = repo.get_poll_with_password(poll_id)
+    match poll_and_pw:
+        case Failure(_):
+            return poll_and_pw  # type: ignore[return-value]
+        case Success(pair):
+            pass
+
+    password_check = _assert_password(pair, password)
+    match password_check:
+        case Failure(_):
+            return password_check  # type: ignore[return-value]
+        case Success(poll):
+            return Success(poll)
 
 
 def submit_vote(poll_id: str, request: VoteRequest) -> Result[VoteResponse, PollError]:
@@ -237,6 +250,15 @@ def close_poll(poll_id: str, request: CloseRequest) -> Result[PollResponse, Poll
         (o.text for o in poll.options if o.option_id == winner_id), None
     )
 
+    # Generate AI explanation — best-effort, don't fail the close if it errors
+    ai_explanation: str | None = None
+    try:
+        from suggestion.service import explain_results
+        option_texts = [o.text for o in poll.options]
+        ai_explanation = explain_results(poll.title, option_texts, scores)
+    except Exception:
+        pass
+
     return repo.save_poll_results(
         poll_id=poll_id,
         winner=winner_id,
@@ -244,4 +266,5 @@ def close_poll(poll_id: str, request: CloseRequest) -> Result[PollResponse, Poll
         result_justification=justification,
         scores=scores,
         veto_disqualified=list(veto_bad),
+        ai_explanation=ai_explanation,
     )

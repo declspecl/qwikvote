@@ -74,8 +74,9 @@ export function createPoll(body: CreatePollForm): Promise<PollResponse> {
   });
 }
 
-export function getPoll(pollId: string): Promise<PollResponse> {
-  return apiFetch(`/polls/${pollId}`, pollResponseSchema);
+export function getPoll(pollId: string, password?: string | null): Promise<PollResponse> {
+  const params = password ? `?password=${encodeURIComponent(password)}` : "";
+  return apiFetch(`/polls/${pollId}${params}`, pollResponseSchema);
 }
 
 export function submitVote(pollId: string, body: VoteRequest): Promise<VoteResponse> {
@@ -92,11 +93,11 @@ export function closePoll(pollId: string, body: CloseRequest): Promise<PollRespo
   });
 }
 
-export async function getSuggestions(title: string, description: string) {
+export async function getSuggestions(title: string, description: string, existingOptions?: string[]) {
   const res = await fetch(joinUrl(API_BASE_URL, "/llm/suggestions"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, description }),
+    body: JSON.stringify({ title, description, existing_options: existingOptions ?? [] }),
   });
 
   if (!res.ok) throw new Error("Failed to get suggestions");
