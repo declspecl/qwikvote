@@ -21,8 +21,6 @@ import { queryClient } from "@/lib/query-client";
 import { ApiError, getExplanation } from "@/lib/api-client";
 import type { PollResponse, VoteResponse } from "@/lib/schemas";
 
-const DEV_API_BASE_URL = "http://localhost:8000";
-
 export const Route = createFileRoute("/poll/$pollId")({
   loader: ({ params }) =>
     queryClient.ensureQueryData(pollQueryOptions(params.pollId)),
@@ -65,7 +63,7 @@ function PollPage() {
   const [loadingExplanation, setLoadingExplanation] = useState(false);
 
   if (poll.status === "closed") {
-    return <PollFinalResults poll={poll} pollId={pollId} explanation={explanation}
+    return <PollFinalResults poll={poll} explanation={explanation}
         setExplanation={setExplanation}
         loadingExplanation={loadingExplanation}
         setLoadingExplanation={setLoadingExplanation}/>;
@@ -250,10 +248,10 @@ function PollLiveResults({
 
 const MEDAL_COLORS = ["text-yellow-500", "text-gray-400", "text-amber-600"];
 
-function PollFinalResults({ poll, pollId,explanation,
+function PollFinalResults({ poll, explanation,
   setExplanation,
   loadingExplanation,
-  setLoadingExplanation,  }: { poll: PollResponse; pollId: string; explanation: string | null;
+  setLoadingExplanation,  }: { poll: PollResponse; explanation: string | null;
   setExplanation: (text: string | null) => void;
   loadingExplanation: boolean;
   setLoadingExplanation: (loading: boolean) => void; }) {
@@ -310,18 +308,13 @@ function PollFinalResults({ poll, pollId,explanation,
             onClick={async () => {
               setLoadingExplanation(true);
               try {
-                const res = await fetch(`${DEV_API_BASE_URL}/llm/explain`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    poll_id: poll.poll_id,
-                    title: poll.title,
-                    options: poll.options.map(o => o.text),
-                    scores: results.scores,
-                  }),
+                const nextExplanation = await getExplanation({
+                  poll_id: poll.poll_id,
+                  title: poll.title,
+                  options: poll.options.map((option) => option.text),
+                  scores: results.scores,
                 });
-                const data = await res.json();
-                setExplanation(data.explanation);
+                setExplanation(nextExplanation);
               } catch (e) {
                 console.error(e);
               } finally {

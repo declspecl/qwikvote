@@ -13,7 +13,13 @@ import {
 const PROD_API_BASE_URL = "https://9zx14x4ipk.execute-api.us-east-1.amazonaws.com/v1";
 const DEV_API_BASE_URL = "http://localhost:8000";
 
-const API_BASE_URL = import.meta.env.PROD ? PROD_API_BASE_URL : DEV_API_BASE_URL;
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+
+export const API_BASE_URL = configuredApiBaseUrl
+  ? configuredApiBaseUrl
+  : import.meta.env.PROD
+    ? PROD_API_BASE_URL
+    : DEV_API_BASE_URL;
 
 function joinUrl(baseUrl: string, path: string): string {
   const normalizedBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
@@ -87,7 +93,7 @@ export function closePoll(pollId: string, body: CloseRequest): Promise<PollRespo
 }
 
 export async function getSuggestions(title: string, description: string) {
-  const res = await fetch(`${DEV_API_BASE_URL}/llm/suggestions`, {
+  const res = await fetch(joinUrl(API_BASE_URL, "/llm/suggestions"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title, description }),
@@ -99,8 +105,20 @@ export async function getSuggestions(title: string, description: string) {
   return data.suggestions;
 }
 
-export async function getExplanation(pollId: string) {
-  const res = await fetch(`http://localhost:8000/llm/explain/${pollId}`);
+export async function getExplanation(payload: {
+  poll_id: string;
+  title: string;
+  options: string[];
+  scores: Record<string, number>;
+}) {
+  const res = await fetch(joinUrl(API_BASE_URL, "/llm/explain"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
   if (!res.ok) throw new Error("Failed to explain results");
-  return res.text();
+
+  const data = await res.json();
+  return data.explanation;
 }

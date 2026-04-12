@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/layout/header";
 import { queryClient } from "@/lib/query-client";
+import logoSrc from "@/assets/qwikvote-logo.png";
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -36,6 +37,7 @@ function RootError({ error }: { error: Error }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center space-y-4 animate-fade-in-up">
+        <img src={logoSrc} alt="QwikVote" className="mx-auto size-16 mb-2" />
         <h1 className="text-2xl font-display font-bold">Something went wrong</h1>
         <p className="text-muted-foreground">{error.message}</p>
         <a href="/" className="text-primary underline hover:text-primary/80 transition-colors">

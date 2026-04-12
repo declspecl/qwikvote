@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FeatureCard } from "@/components/shared/feature-card";
+import logoSrc from "@/assets/qwikvote-logo.png";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,
@@ -62,6 +63,11 @@ function LandingPage() {
     <main className="container mx-auto px-4 py-16">
       {/* Hero */}
       <section className="text-center space-y-8 mb-32 reveal d1">
+        <img
+          src={logoSrc}
+          alt="QwikVote logo"
+          className="mx-auto size-24 sm:size-28 lg:size-32 drop-shadow-lg"
+        />
         <h1 className="font-display text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-tight">
           Decide Together,
           <br />
