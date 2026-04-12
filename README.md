@@ -66,11 +66,21 @@ Two workflows are included:
 
 Required GitHub repository configuration:
 
-- Repository variable `AWS_ACCOUNT_ID`
 - Repository variable `AWS_DEPLOY_ROLE_ARN`
 - Repository secret `RANDOM_ORG_API_KEY`
 
 The deploy workflow uses GitHub OIDC via `aws-actions/configure-aws-credentials`, so `AWS_DEPLOY_ROLE_ARN` should trust GitHub Actions for this repository.
+
+This repo includes a bootstrap CDK stack that creates that role for `declspecl/qwikvote` on the `main` branch:
+
+```bash
+cd qwikvote-cdk
+cp .env.example .env.local
+pnpm install --frozen-lockfile
+pnpm exec cdk deploy qwikvote-github-actions
+```
+
+After that deploy finishes, copy the `GitHubActionsDeployRoleArn` stack output into the GitHub repository variable `AWS_DEPLOY_ROLE_ARN`.
 
 Manual CDK deploys should build the website first, because the website stack publishes `qwikvote-website/dist`:
 
