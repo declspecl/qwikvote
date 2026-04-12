@@ -32,16 +32,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: |
-            qwikvote-cdk/pnpm-lock.yaml
-            qwikvote-website/package-lock.json
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
+          cache-dependency-path: qwikvote-cdk/pnpm-lock.yaml
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
